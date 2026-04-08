@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xác thực | Zenith Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .auth-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 160px);
+    }
+    .auth-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-md);
+      width: 100%;
+      max-width: 450px;
+    }
+    .auth-tabs {
+      display: flex;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border-color);
+    }
+    .auth-tab {
+      flex: 1;
+      text-align: center;
+      padding: 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.3s;
+    }
+    .auth-tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .auth-form {
+      display: none;
+    }
+    .auth-form.active {
+      display: block;
+    }
+    .hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="logo">ZenithStore.</a>
+      <nav class="nav-links">
+        <a href="index.html">Sản phẩm</a>
+        <!-- Auth logic inserted dynamically -->
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Đăng nhập</div>
+          <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Đăng ký</div>
+        </div>
+
+        <form id="form-login" class="auth-form active">
+          <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Chào mừng trở lại!</h2>
+          <div class="form-group">
+            <label>Email hoặc username</label>
+            <input type="text" id="login-email" class="form-control" required placeholder="Ví dụ: nva@gmail.com hoặc admin">
+          </div>
+          <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" id="login-password" class="form-control" required placeholder="Nhập mật khẩu (ví dụ: 123)">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Đăng nhập</button>
+          <div class="hint">Tài khoản mẫu: nva@gmail.com / 123 (Khách) hoặc admin / 123 (Admin)</div>
+        </form>
+
+        <form id="form-register" class="auth-form">
+          <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Tạo tài khoản mới</h2>
+          <div class="form-group">
+            <label>Họ và tên</label>
+            <input type="text" id="reg-name" class="form-control" required placeholder="Ví dụ: Nguyễn Văn X">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="reg-email" class="form-control" required placeholder="Xác nhận email của bạn">
+          </div>
+          <div class="form-group">
+            <label>Số điện thoại</label>
+            <input type="text" id="reg-phone" class="form-control" required placeholder="Số điện thoại của bạn">
+          </div>
+          <div class="form-group">
+            <label>Mật khẩu</label>
+            <input type="password" id="reg-password" class="form-control" required placeholder="Tạo mật khẩu (chứa ít nhất 3 ký tự)">
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Đăng ký hệ thống</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/data.js"></script>
+  <script>
+    function switchTab(tab) {
+      document.getElementById('tab-login').classList.remove('active');
+      document.getElementById('tab-register').classList.remove('active');
+      document.getElementById('form-login').classList.remove('active');
+      document.getElementById('form-register').classList.remove('active');
+
+      if (tab === 'login') {
+        document.getElementById('tab-login').classList.add('active');
+        document.getElementById('form-login').classList.add('active');
+      } else {
+        document.getElementById('tab-register').classList.add('active');
+        document.getElementById('form-register').classList.add('active');
+      }
+    }
+
+    document.getElementById('form-login').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+      
+      try {
+        if (loginUser(email, pass)) {
+          const user = getCurrentUser();
+          if (user.role === 'admin') {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.href = 'index.html';
+          }
+        } else {
+          alert('Sai email hoặc mật khẩu!');
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    document.getElementById('form-register').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const phone = document.getElementById('reg-phone').value;
+      const password = document.getElementById('reg-password').value;
+
+      const customers = getCustomers();
+      if (customers.find(c => c.email === email)) {
+        alert('Email này đã được sử dụng!');
+        return;
+      }
+
+      const newId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1;
+      const newCustomer = {
+        id: newId,
+        name,
+        email,
+        phone,
+        password,
+        registerDate: new Date().toISOString().split('T')[0],
+        totalSpent: 0,
+        isLocked: false,
+        isDeleted: false
+      };
+
+      customers.push(newCustomer);
+      saveCustomers(customers);
+
+      alert('Đăng ký thành công! Đang tự động đăng nhập...');
+      loginUser(email, password);
+      window.location.href = 'index.html';
+    });
+    
+    // Nếu đã đăng nhập thì điều hướng về Index
+    document.addEventListener('DOMContentLoaded', () => {
+       if (getCurrentUser()) {
+         window.location.href = 'index.html';
+       }
+    });
+  </script>
+</body>
+</html>

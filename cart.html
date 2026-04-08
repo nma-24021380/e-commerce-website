@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Giỏ hàng | Zenith Store</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="logo">ZenithStore.</a>
+      <nav class="nav-links">
+        <a href="index.html">Sản phẩm</a>
+        <a href="cart.html" class="active cart-link">
+          Giỏ hàng
+          <span class="cart-count" id="cart-count" style="display: none;">0</span>
+        </a>
+        <a href="admin.html">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1 class="page-title">Giỏ hàng của bạn</h1>
+    
+    <div id="checkout-success" class="alert alert-success hidden">
+      ✅ Thanh toán thành công! Mã đơn hàng của bạn là: #ZEN<span id="order-id"></span>. Chúng tôi sẽ sớm giao hàng nhé.
+    </div>
+
+    <div id="cart-container">
+      <div id="cart-items" class="cart-list mb-4">
+        <!-- Danh sách giỏ hàng render ở đây -->
+      </div>
+
+      <div class="cart-summary" id="cart-summary" style="display: none;">
+        <div class="summary-row">
+          <span>Tổng số lượng:</span>
+          <span id="total-qty">0</span>
+        </div>
+        <div class="summary-row summary-total">
+          <span>Thành tiền:</span>
+          <span id="total-price">0 đ</span>
+        </div>
+        <button id="btn-checkout" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; font-size: 1.1rem; padding: 1rem;">
+          Tiến hành thanh toán
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Checkout -->
+  <div class="modal" id="checkout-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Thông tin Giao hàng & Thanh toán</h2>
+        <button class="close-btn" onclick="document.getElementById('checkout-modal').classList.remove('active')">&times;</button>
+      </div>
+      <form id="checkout-form">
+        <div class="form-group">
+          <label>Họ và Tên *</label>
+          <input type="text" id="co-name" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Số điện thoại *</label>
+          <input type="tel" id="co-phone" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label>Địa chỉ nhận hàng chi tiết *</label>
+          <textarea id="co-address" class="form-control" rows="3" required placeholder="Tòa nhà, tên đường, phường/xã, quận/huyện..."></textarea>
+        </div>
+        
+        <div class="form-group" style="margin-top: 1.5rem;">
+          <label style="margin-bottom: 0.5rem; display: block; font-weight: 600;">Phương thức Thanh toán</label>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="paymethod" value="COD" checked> Thanh toán khi nhận hàng (COD)
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="radio" name="paymethod" value="Chuyển khoản"> Chuyển khoản ngân hàng
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1.5rem; font-size: 1.1rem; padding: 1rem;">
+          Xác nhận Đặt hàng
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Zenith Store.</p>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script>
+    const userRoleCart = getCurrentUser()?.role;
+    if (userRoleCart !== 'customer') {
+      window.location.href = 'login.html';
+    }
+
+    function updateQuantity(productId, delta) {
+      const cart = getCart();
+      const products = getProducts();
+      const productObj = products.find(p => p.id === productId);
+      
+      const itemIndex = cart.findIndex(i => i.id === productId);
+      if (itemIndex > -1) {
+        if (delta > 0 && productObj && cart[itemIndex].quantity + delta > productObj.stock) {
+          alert(`Chỉ còn tối đa ${productObj.stock} sản phẩm trong kho!`);
+          return;
+        }
+        cart[itemIndex].quantity += delta;
+        if (cart[itemIndex].quantity <= 0) {
+          cart.splice(itemIndex, 1);
+        }
+        saveCart(cart);
+        renderCart();
+        updateCartBadge();
+      }
+    }
+
+    function removeItem(productId) {
+      let cart = getCart();
+      cart = cart.filter(i => i.id !== productId);
+      saveCart(cart);
+      renderCart();
+      updateCartBadge();
+    }
+
+    function toggleItemSelection(productId) {
+      const cart = getCart();
+      const item = cart.find(i => i.id === productId);
+      if (item) {
+        item.selected = (item.selected === false) ? true : false;
+        saveCart(cart);
+        renderCart();
+      }
+    }
+
+    function toggleAllSelection(event) {
+      const isChecked = event.target.checked;
+      const cart = getCart();
+      cart.forEach(item => item.selected = isChecked);
+      saveCart(cart);
+      renderCart();
+    }
+
+    function renderCart() {
+      const cartItemsEl = document.getElementById('cart-items');
+      const cartSummaryEl = document.getElementById('cart-summary');
+      const cart = getCart();
+
+      if (cart.length === 0) {
+        cartItemsEl.innerHTML = `
+          <div class="text-center" style="padding: 2rem 0; color: var(--text-muted);">
+            Giỏ hàng của bạn đang trống.<br><br>
+            <a href="index.html" class="btn btn-primary">Mua sắm ngay</a>
+          </div>`;
+        cartSummaryEl.style.display = 'none';
+        return;
+      }
+
+      const allSelected = cart.length > 0 && cart.every(item => item.selected !== false);
+
+      cartItemsEl.innerHTML = `
+        <div class="cart-header" style="padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
+          <input type="checkbox" id="select-all" style="width: 1.2rem; height: 1.2rem; cursor: pointer;" ${allSelected ? 'checked' : ''} onchange="toggleAllSelection(event)">
+          <label for="select-all" style="font-weight: 600; cursor: pointer;">Chọn tất cả</label>
+        </div>
+      ` + cart.map(item => {
+        const isSelected = item.selected !== false;
+        // Chúng ta lấy stock hiện tại từ getProducts luôn cho chắc chắn thay vì từ giỏ hàng được lưu từ trước
+        const products = getProducts();
+        const productFromDb = products.find(p => p.id === item.id);
+        const currentStock = productFromDb ? productFromDb.stock : 0;
+        
+        return `
+        <div class="cart-item" style="${!isSelected ? 'opacity: 0.6;' : 'opacity: 1;'}">
+          <input type="checkbox" style="width: 1.2rem; height: 1.2rem; cursor: pointer;" ${isSelected ? 'checked' : ''} onchange="toggleItemSelection(${item.id})">
+          <img src="${item.image}" alt="${item.name}" class="cart-item-img" onerror="this.src='https://via.placeholder.com/80?text=No+Img';">
+          <div class="cart-item-info">
+            <div class="cart-item-title">${item.name}</div>
+            <div class="cart-item-price">${formatCurrency(item.price)} <span style="font-size:0.8rem; color:var(--text-muted); margin-left:0.5rem">(Kho: ${currentStock})</span></div>
+          </div>
+          <div class="d-flex gap-2" style="align-items: center;">
+            <button class="btn btn-outline" onclick="updateQuantity(${item.id}, -1)">-</button>
+            <span style="width: 30px; text-align: center; font-weight: 600;">${item.quantity}</span>
+            <button class="btn btn-outline" onclick="updateQuantity(${item.id}, 1)">+</button>
+          </div>
+          <button class="btn btn-danger" onclick="removeItem(${item.id})" style="margin-left: 1rem;">Xóa</button>
+        </div>
+        `;
+      }).join('');
+
+      cartSummaryEl.style.display = 'block';
+      
+      const selectedCart = cart.filter(item => item.selected !== false);
+      const totalQty = selectedCart.reduce((sum, item) => sum + item.quantity, 0);
+      const totalPrice = selectedCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      document.getElementById('total-qty').textContent = totalQty;
+      document.getElementById('total-price').textContent = formatCurrency(totalPrice);
+    }
+
+    document.getElementById('btn-checkout')?.addEventListener('click', () => {
+      const currentUser = getCurrentUser();
+      const fullCart = getCart();
+      const cart = fullCart.filter(item => item.selected !== false);
+      const products = getProducts();
+      
+      if(cart.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để thanh toán!');
+        return;
+      }
+      
+      // Kiểm tra lại stock trước khi chốt đơn
+      for (let item of cart) {
+        const dbProduct = products.find(p => p.id === item.id);
+        if (!dbProduct || dbProduct.stock < item.quantity) {
+          alert(`Sản phẩm "${item.name}" hiện không đủ số lượng trong kho (Còn: ${dbProduct ? dbProduct.stock : 0}). Vui lòng điều chỉnh lại!`);
+          return;
+        }
+      }
+
+      // Pre-fill user data
+      if (currentUser) {
+        document.getElementById('co-name').value = currentUser.name || '';
+        document.getElementById('co-phone').value = currentUser.phone || '';
+      }
+      
+      // Open modal instead of closing order randomly
+      document.getElementById('checkout-modal').classList.add('active');
+    });
+
+    document.getElementById('checkout-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('co-name').value;
+      const phone = document.getElementById('co-phone').value;
+      const address = document.getElementById('co-address').value;
+      const paymethod = document.querySelector('input[name="paymethod"]:checked').value;
+
+      const currentUser = getCurrentUser();
+      const fullCart = getCart();
+      const cart = fullCart.filter(item => item.selected !== false);
+      const products = getProducts();
+
+      // Dữ liệu Shipping
+      const shippingInfo = { name, phone, address, paymethod };
+      
+      // Save order to history locally (optional)
+      let orders = JSON.parse(localStorage.getItem('ecommerce_orders')) || [];
+      const orderTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      orders.push({
+        id: Date.now(),
+        userId: currentUser ? currentUser.id : null,
+        date: new Date().toISOString(),
+        items: cart,
+        total: orderTotal,
+        status: 'Chờ xử lý',
+        shipping: shippingInfo
+      });
+      localStorage.setItem('ecommerce_orders', JSON.stringify(orders));
+
+      // Trừ kho
+      cart.forEach(item => {
+        const pIndex = products.findIndex(p => p.id === item.id);
+        if (pIndex > -1) {
+          products[pIndex].stock -= item.quantity;
+        }
+      });
+      saveProducts(products);
+
+      // Cập nhật tổng chi tiêu của Khách hàng
+      if (currentUser && currentUser.role === 'customer') {
+        let customers = getCustomers();
+        let customerIndex = customers.findIndex(c => c.id === currentUser.id);
+        if (customerIndex > -1) {
+            customers[customerIndex].totalSpent = (customers[customerIndex].totalSpent || 0) + orderTotal;
+            saveCustomers(customers);
+            
+            // Cập nhật lại state của user hiện tại
+            currentUser.totalSpent = customers[customerIndex].totalSpent;
+            localStorage.setItem('ecommerce_currentUser', JSON.stringify(currentUser));
+        }
+      }
+
+      // Clear ONLY checked out items from cart
+      const remainingCart = fullCart.filter(item => item.selected === false);
+      saveCart(remainingCart);
+      
+      // Show UI feedback
+      document.getElementById('checkout-modal').classList.remove('active');
+      document.getElementById('cart-container').style.display = 'none';
+      document.getElementById('order-id').textContent = Math.floor(Math.random() * 100000);
+      document.getElementById('checkout-success').classList.remove('hidden');
+      updateCartBadge();
+      window.scrollTo(0, 0);
+    });
+
+    document.addEventListener('DOMContentLoaded', renderCart);
+  </script>
+</body>
+</html>
