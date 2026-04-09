@@ -257,9 +257,16 @@
       
       // Update Stats
       document.getElementById('stat-products').textContent = products.length;
-      document.getElementById('stat-orders').textContent = orders.length;
+      document.getElementById('stat-orders').textContent = orders.filter(o => o.status !== 'Đã hủy').length;
       
-      const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+      // Doanh thu: Chỉ cộng đơn Chuyển khoản (trừ đơn hủy) + đơn COD đã giao
+      const totalRevenue = orders.reduce((sum, o) => {
+        const pay = o.shipping?.paymethod || 'COD';
+        if (o.status === 'Đã hủy') return sum;
+        if (pay === 'Chuyển khoản') return sum + o.total;
+        if (pay === 'COD' && o.status === 'Đã giao') return sum + o.total;
+        return sum;
+      }, 0);
       document.getElementById('stat-revenue').textContent = formatCurrency(totalRevenue);
 
       // Render Table
@@ -344,32 +351,57 @@
 
     window.updateOrderStatus = function(orderId, newStatus) {
       let orders = JSON.parse(localStorage.getItem('ecommerce_orders')) || [];
-      const orderIndex = orders.findIndex(o => o.id === orderId);
-      if (orderIndex > -1) {
-        const oldStatus = orders[orderIndex].status;
-        if (oldStatus === 'Đã hủy') return;
-        
-        orders[orderIndex].status = newStatus;
-        localStorage.setItem('ecommerce_orders', JSON.stringify(orders));
-        
-        if (newStatus === 'Đã hủy') {
-           const products = getProducts();
-           let needsSave = false;
-           const orderItems = orders[orderIndex].items || [];
-           orderItems.forEach(item => {
-             const pIndex = products.findIndex(p => p.id === item.id);
-             if (pIndex > -1) {
-               products[pIndex].stock += item.quantity;
-               needsSave = true;
-             }
-           });
-           if (needsSave) saveProducts(products);
-           alert(`Đơn hàng #${orderId} đã bị hủy. Đã hoàn trả số lượng kho.`);
-        } else {
-           alert(`Đã cập nhật trạng thái đơn #${orderId} thành "${newStatus}".`);
+      // orderId có thể là number hoặc string từ attribute, dùng == để so sánh linh hoạt
+      const orderIndex = orders.findIndex(o => o.id == orderId);
+      if (orderIndex === -1) return;
+
+      const order = orders[orderIndex];
+      if (order.status === 'Đã hủy') return;
+
+      const paymethod = order.shipping?.paymethod || 'COD';
+      orders[orderIndex].status = newStatus;
+      localStorage.setItem('ecommerce_orders', JSON.stringify(orders));
+
+      // --- HOÀN KHO khi hủy ---
+      if (newStatus === 'Đã hủy') {
+        const products = getProducts();
+        let needsSave = false;
+        const orderItems = order.items || [];
+        orderItems.forEach(item => {
+          const pIndex = products.findIndex(p => p.id == item.id);
+          if (pIndex > -1) {
+            products[pIndex].stock += item.quantity;
+            needsSave = true;
+          }
+        });
+        if (needsSave) saveProducts(products);
+
+        // Nếu Chuyển khoản bị hủy → hoàn tiền (trừ totalSpent khách hàng)
+        if (paymethod === 'Chuyển khoản' && order.userId != null) {
+          let customers = getCustomers();
+          const idx = customers.findIndex(c => c.id == order.userId);
+          if (idx > -1) {
+            customers[idx].totalSpent = Math.max(0, (customers[idx].totalSpent || 0) - order.total);
+            saveCustomers(customers);
+          }
         }
-        renderAdminData();
+
+        alert(`Đơn hàng #${orderId} đã bị hủy. Đã hoàn trả số lượng kho.${paymethod === 'Chuyển khoản' ? '\nDoanh thu đã được hoàn trả lại cho khách hàng.' : ''}`);
+
+      // --- COD: cộng doanh thu khi Đã giao ---
+      } else if (newStatus === 'Đã giao' && paymethod === 'COD' && order.userId != null) {
+        let customers = getCustomers();
+        const idx = customers.findIndex(c => c.id == order.userId);
+        if (idx > -1) {
+          customers[idx].totalSpent = (customers[idx].totalSpent || 0) + order.total;
+          saveCustomers(customers);
+        }
+        alert(`Đã cập nhật trạng thái đơn #${orderId} thành "Đã giao". Doanh thu COD đã được ghi nhận.`);
+      } else {
+        alert(`Đã cập nhật trạng thái đơn #${orderId} thành "${newStatus}".`);
       }
+
+      renderAdminData();
     };
 
     window.toggleLockUser = function(id) {
