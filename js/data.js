@@ -204,8 +204,10 @@ function updateHeaderNavigation() {
   
   const existingLogin = navLinks.querySelector('.auth-login');
   const existingLogout = navLinks.querySelector('.auth-logout');
+  const existingProfile = navLinks.querySelector('.auth-profile');
   if (existingLogin) existingLogin.remove();
   if (existingLogout) existingLogout.remove();
+  if (existingProfile) existingProfile.remove();
 
   if (!user) {
     if (adminLink) adminLink.style.display = 'none';
@@ -222,6 +224,12 @@ function updateHeaderNavigation() {
     // Customer
     if (adminLink) adminLink.style.display = 'none';
     if (cartLink) cartLink.style.display = 'flex';
+    
+    const profileLink = document.createElement('a');
+    profileLink.href = 'profile.html';
+    profileLink.className = 'auth-profile';
+    profileLink.textContent = 'Trang cá nhân';
+    navLinks.appendChild(profileLink);
   }
 
   if (user) {
