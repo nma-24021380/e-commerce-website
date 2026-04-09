@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Quản trị | E-com</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { background-color: #f1f5f9; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="admin.html" class="logo">E-com Admin</a>
+      <nav class="nav-links">
+        <a href="admin.html" class="active">Quản lý Sản phẩm</a>
+        <a href="index.html" target="_blank">Xem Cửa hàng ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="admin-header">
+      <h1 class="page-title" style="margin: 0;">Dashboard</h1>
+      <button class="btn btn-primary" id="btn-add-product">+ Thêm sản phẩm mới</button>
+    </div>
+
+    <div class="admin-grid">
+      <div class="stat-card">
+        <div class="stat-title">TỔNG SẢN PHẨM</div>
+        <div class="stat-value" id="stat-products">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">TỔNG ĐƠN HÀNG</div>
+        <div class="stat-value" id="stat-orders">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">DOANH THU ƯỚC TÍNH</div>
+        <div class="stat-value" id="stat-revenue">0 đ</div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Danh sách hệ thống sản phẩm</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Hình ảnh</th>
+            <th>Tên sản phẩm</th>
+            <th>Danh mục</th>
+            <th>Tồn kho</th>
+            <th>Giá bán (VNĐ)</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="admin-product-list">
+          <!-- Render from JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 2rem;">
+      <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Quản lý Đơn hàng toàn cục</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Mã đơn</th>
+            <th>Khách hàng</th>
+            <th>Ngày mua</th>
+            <th>Tổng tiền</th>
+            <th>Trạng thái</th>
+          </tr>
+        </thead>
+        <tbody id="admin-global-orders-list">
+          <!-- Render from JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-container" style="margin-top: 2rem;">
+      <h2 style="font-size: 1.125rem; margin-bottom: 1rem;">Quản lý Khách hàng</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên khách hàng</th>
+            <th>Email</th>
+            <th>Số điện thoại</th>
+            <th>Ngày đăng ký</th>
+            <th>Tổng chi tiêu</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="admin-customer-list">
+          <!-- Render from JS -->
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal Thêm Sản Phẩm -->
+  <div class="modal" id="product-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Thêm Sản phẩm</h2>
+        <button class="close-btn" id="close-modal">&times;</button>
+      </div>
+      <form id="product-form">
+        <div class="form-group">
+          <label>Tên sản phẩm *</label>
+          <input type="text" id="p-name" class="form-control" required placeholder="Ví dụ: Tai nghe Sony">
+        </div>
+        <div class="form-group">
+          <label>Giá bán (VNĐ) *</label>
+          <input type="number" id="p-price" class="form-control" required placeholder="Vd: 1500000">
+        </div>
+        <div class="form-group">
+          <label>Hình ảnh (URL)</label>
+          <input type="url" id="p-image" class="form-control" placeholder="https://...">
+        </div>
+        <div class="form-group" style="display: flex; gap: 1rem;">
+          <div style="flex: 1;">
+            <label>Phân loại</label>
+            <input type="text" id="p-category" class="form-control" placeholder="Ví dụ: Phụ kiện">
+          </div>
+          <div style="flex: 1;">
+            <label>Tồn kho</label>
+            <input type="number" id="p-stock" class="form-control" required placeholder="Ví dụ: 50" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mô tả ngắn</label>
+          <textarea id="p-desc" class="form-control" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Lưu sản phẩm</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Xem Đơn Hàng -->
+  <div class="modal" id="orders-modal">
+    <div class="modal-content" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2 class="modal-title" id="orders-modal-title">Lịch sử mua hàng</h2>
+        <button class="close-btn" onclick="document.getElementById('orders-modal').classList.remove('active')">&times;</button>
+      </div>
+      <div class="table-container" style="box-shadow: none; padding: 0;">
+        <table>
+          <thead>
+            <tr>
+              <th>Mã đơn</th>
+              <th>Ngày mua</th>
+              <th>Trạng thái</th>
+              <th>Tổng tiền</th>
+            </tr>
+          </thead>
+          <tbody id="user-orders-list">
+            <!-- Render from JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    const userRoleAdmin = getCurrentUser()?.role;
+    if (userRoleAdmin !== 'admin') {
+      window.location.href = 'login.html';
+    }
+
+    // Elements
+    const modal = document.getElementById('product-modal');
+    const btnAdd = document.getElementById('btn-add-product');
+    const btnClose = document.getElementById('close-modal');
+    const form = document.getElementById('product-form');
+    const modalTitle = document.getElementById('modal-title');
+    let editProductId = null; // Biến lưu trạng thái đang sửa
+
+    // Mở modal thêm
+    btnAdd.addEventListener('click', () => {
+      form.reset();
+      editProductId = null;
+      modalTitle.textContent = 'Thêm Sản phẩm';
+      modal.classList.add('active');
+    });
+
+    // Mở modal sửa
+    window.editProduct = function(id) {
+      const products = getProducts();
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+
+      document.getElementById('p-name').value = product.name;
+      document.getElementById('p-price').value = product.price;
+      document.getElementById('p-image').value = product.image;
+      document.getElementById('p-category').value = product.category || 'Khác';
+      document.getElementById('p-stock').value = product.stock;
+      document.getElementById('p-desc').value = product.desc || '';
+
+      editProductId = id;
+      modalTitle.textContent = 'Chỉnh sửa Sản phẩm';
+      modal.classList.add('active');
+    };
+
+    // Đóng modal
+    btnClose.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+
+    // Submit form (Thêm hoặc Sửa)
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('p-name').value;
+      const price = parseInt(document.getElementById('p-price').value);
+      const image = document.getElementById('p-image').value || 'https://via.placeholder.com/300x200?text=No+Image';
+      const category = document.getElementById('p-category').value || 'Khác';
+      const stock = parseInt(document.getElementById('p-stock').value) || 0;
+      const desc = document.getElementById('p-desc').value;
+
+      const products = getProducts();
+
+      if (editProductId) {
+        // Cập nhật sản phẩm có sẵn
+        const index = products.findIndex(p => p.id === editProductId);
+        if (index > -1) {
+          products[index] = { ...products[index], name, price, image, category, stock, desc };
+        }
+      } else {
+        // Thêm sản phẩm mới
+        const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        products.push({ id: newId, name, price, image, category, stock, desc });
+      }
+      
+      saveProducts(products);
+      
+      modal.classList.remove('active');
+      renderAdminData();
+    });
+
+    function deleteProduct(id) {
+      if(!confirm('Bạn có chắc muốn xóa sản phẩm này?')) return;
+      let products = getProducts();
+      products = products.filter(p => p.id !== id);
+      saveProducts(products);
+      renderAdminData();
+    }
+
+    function renderAdminData() {
+      const products = getProducts();
+      const orders = JSON.parse(localStorage.getItem('ecommerce_orders')) || [];
+      const customers = getCustomers();
+      
+      // Update Stats
+      document.getElementById('stat-products').textContent = products.length;
+      document.getElementById('stat-orders').textContent = orders.length;
+      
+      const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+      document.getElementById('stat-revenue').textContent = formatCurrency(totalRevenue);
+
+      // Render Table
+      const tbody = document.getElementById('admin-product-list');
+      if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: var(--text-muted)">Không có dữ liệu</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = products.map(p => `
+        <tr>
+          <td style="color: var(--text-muted)">#${p.id}</td>
+          <td>
+            <img src="${p.image}" alt="${p.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #eee;">
+          </td>
+          <td style="font-weight: 500">${p.name}</td>
+          <td><span style="background:#e2e8f0; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem">${p.category || 'Khác'}</span></td>
+          <td style="${p.stock <= 0 ? 'color: var(--danger-color); font-weight:bold;' : ''}">${p.stock}</td>
+          <td style="color: var(--primary-color); font-weight: 600">${formatCurrency(p.price)}</td>
+          <td>
+            <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.5rem;" onclick="editProduct(${p.id})">Sửa</button>
+            <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem" onclick="deleteProduct(${p.id})">Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Render Global Orders Table
+      const orderTbody = document.getElementById('admin-global-orders-list');
+      if (orders.length === 0) {
+        orderTbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: var(--text-muted)">Không có đơn hàng nào</td></tr>';
+      } else {
+        const sortedOrders = [...orders].sort((a,b) => new Date(b.date) - new Date(a.date));
+        orderTbody.innerHTML = sortedOrders.map(o => {
+          const customerName = o.shipping ? o.shipping.name : (customers.find(c => c.id === o.userId)?.name || 'Khách');
+          const isCancelled = o.status === 'Đã hủy';
+          return `
+          <tr style="${isCancelled ? 'opacity: 0.6;' : ''}">
+            <td style="color: var(--text-muted)">#${o.id}</td>
+            <td style="font-weight: 500">${customerName}</td>
+            <td>${new Date(o.date).toLocaleString('vi-VN')}</td>
+            <td style="color: var(--primary-color); font-weight: 600">${formatCurrency(o.total)}</td>
+            <td>
+              <select class="form-control" style="width: auto; padding: 0.25rem; font-size: 0.85rem;" onchange="updateOrderStatus(${o.id}, this.value)" ${isCancelled ? 'disabled' : ''}>
+                <option value="Chờ xử lý" ${o.status === 'Chờ xử lý' || !o.status ? 'selected' : ''}>Chờ xử lý</option>
+                <option value="Đang giao" ${o.status === 'Đang giao' ? 'selected' : ''}>Đang giao</option>
+                <option value="Đã giao" ${o.status === 'Đã giao' ? 'selected' : ''}>Đã giao</option>
+                <option value="Đã hủy" ${o.status === 'Đã hủy' ? 'selected' : ''}>Đã hủy</option>
+              </select>
+            </td>
+          </tr>
+          `;
+        }).join('');
+      }
+
+      // Render Customer Table
+      const customerTbody = document.getElementById('admin-customer-list');
+      if (customers.length === 0) {
+        customerTbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color: var(--text-muted)">Không có dữ liệu khách hàng</td></tr>';
+      } else {
+        customerTbody.innerHTML = customers.map(c => {
+          const statusText = c.isDeleted ? '<span style="color:var(--danger-color)">Đã xóa</span>' : (c.isLocked ? '<span style="color:orange">Bị khóa</span>' : '<span style="color:var(--success-color)">Hoạt động</span>');
+          const rowStyle = c.isDeleted ? 'opacity: 0.5;' : '';
+          const lockBtnText = c.isLocked ? 'Mở khóa' : 'Khóa';
+          return `
+          <tr style="${rowStyle}">
+            <td style="color: var(--text-muted)">#${c.id}</td>
+            <td style="font-weight: 500">${c.name}</td>
+            <td>${c.email}</td>
+            <td>${c.phone}</td>
+            <td>${c.registerDate}</td>
+            <td style="color: var(--primary-color); font-weight: 600">${formatCurrency(c.totalSpent)}</td>
+            <td style="font-weight: 600;">${statusText}</td>
+            <td>
+              <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem;" onclick="viewUserOrders(${c.id}, '${c.name}')">Xem đơn</button>
+              <button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem;" onclick="toggleLockUser(${c.id})" ${c.isDeleted ? 'disabled' : ''}>${lockBtnText}</button>
+              <button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="softDeleteUser(${c.id})" ${c.isDeleted ? 'disabled' : ''}>Xóa</button>
+            </td>
+          </tr>
+        `}).join('');
+      }
+    }
+
+    window.updateOrderStatus = function(orderId, newStatus) {
+      let orders = JSON.parse(localStorage.getItem('ecommerce_orders')) || [];
+      const orderIndex = orders.findIndex(o => o.id === orderId);
+      if (orderIndex > -1) {
+        const oldStatus = orders[orderIndex].status;
+        if (oldStatus === 'Đã hủy') return;
+        
+        orders[orderIndex].status = newStatus;
+        localStorage.setItem('ecommerce_orders', JSON.stringify(orders));
+        
+        if (newStatus === 'Đã hủy') {
+           const products = getProducts();
+           let needsSave = false;
+           const orderItems = orders[orderIndex].items || [];
+           orderItems.forEach(item => {
+             const pIndex = products.findIndex(p => p.id === item.id);
+             if (pIndex > -1) {
+               products[pIndex].stock += item.quantity;
+               needsSave = true;
+             }
+           });
+           if (needsSave) saveProducts(products);
+           alert(`Đơn hàng #${orderId} đã bị hủy. Đã hoàn trả số lượng kho.`);
+        } else {
+           alert(`Đã cập nhật trạng thái đơn #${orderId} thành "${newStatus}".`);
+        }
+        renderAdminData();
+      }
+    };
+
+    window.toggleLockUser = function(id) {
+      if(!confirm('Đổi trạng thái khóa/mở khóa tài khoản này?')) return;
+      let customers = getCustomers();
+      let index = customers.findIndex(c => c.id === id);
+      if (index > -1) {
+        customers[index].isLocked = !customers[index].isLocked;
+        saveCustomers(customers);
+        renderAdminData();
+      }
+    };
+
+    window.softDeleteUser = function(id) {
+      if(!confirm('Bạn có chắc muốn cấu hình xóa (soft delete) tài khoản này? Khách hàng sẽ không thể đăng nhập nữa.')) return;
+      let customers = getCustomers();
+      let index = customers.findIndex(c => c.id === id);
+      if (index > -1) {
+        customers[index].isDeleted = true;
+        saveCustomers(customers);
+        renderAdminData();
+      }
+    };
+
+    window.viewUserOrders = function(id, name) {
+      const orders = JSON.parse(localStorage.getItem('ecommerce_orders')) || [];
+      const userOrders = orders.filter(o => o.userId === id);
+      const tbody = document.getElementById('user-orders-list');
+      
+      document.getElementById('orders-modal-title').textContent = `Lịch sử đơn hàng: ${name}`;
+
+      if (userOrders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="color: var(--text-muted)">Người dùng này chưa có đơn hàng nào.</td></tr>';
+      } else {
+        tbody.innerHTML = userOrders.map(o => `
+          <tr>
+            <td style="color: var(--text-muted)">#${o.id}</td>
+            <td>${new Date(o.date).toLocaleString('vi-VN')}</td>
+            <td><span style="background:var(--success-color); color:white; padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem;">${o.status || 'Hoàn tất'}</span></td>
+            <td style="color: var(--primary-color); font-weight: 600">${formatCurrency(o.total)}</td>
+          </tr>
+          ${o.shipping ? `
+          <tr style="background-color: #f8fafc;">
+            <td colspan="4" style="padding: 0.75rem; font-size: 0.85rem; color: var(--text-color); border-bottom: 2px solid #e2e8f0;">
+              <strong>Giao đến:</strong> ${o.shipping.name} - ${o.shipping.phone} <br>
+              <strong>Địa chỉ:</strong> ${o.shipping.address} <br>
+              <strong>Thanh toán:</strong> ${o.shipping.paymethod}
+            </td>
+          </tr>
+          ` : `
+          <tr style="background-color: #f8fafc;">
+            <td colspan="4" style="padding: 0.75rem; font-size: 0.85rem; color: var(--text-muted); border-bottom: 2px solid #e2e8f0;">
+              (Đơn hàng cũ, không có thông tin vận chuyển)
+            </td>
+          </tr>
+          `}
+        `).join('');
+      }
+
+      document.getElementById('orders-modal').classList.add('active');
+    };
+
+    document.addEventListener('DOMContentLoaded', renderAdminData);
+  </script>
+</body>
+</html>
