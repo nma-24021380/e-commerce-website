@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zenith Store | Mua sắm thông minh</title>
+  <title>E-com | Mua sắm thông minh</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header>
     <div class="nav-container">
-      <a href="index.html" class="logo">ZenithStore.</a>
+      <a href="index.html" class="logo">E-com.</a>
       <nav class="nav-links">
         <a href="index.html" class="active">Sản phẩm</a>
         <a href="cart.html" class="cart-link">
@@ -24,6 +24,9 @@
 
   <main>
     <h1 class="page-title">Sản phẩm nổi bật</h1>
+    <div class="search-container" style="max-width: 600px; margin: 0 auto 1.5rem auto; display: flex; gap: 0.5rem;">
+      <input type="text" id="search-input" class="form-control" placeholder="Tìm kiếm sản phẩm theo tên..." oninput="searchProducts(this.value)" style="flex: 1; padding: 0.75rem 1rem; border-radius: 20px;">
+    </div>
     <div class="category-filters" id="category-filters" style="margin-bottom: 1.5rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
       <!-- Nút phân loại sẽ render ở đây -->
     </div>
@@ -33,12 +36,18 @@
   </main>
 
   <footer>
-    <p>&copy; 2026 Zenith Store. Không có bản quyền (Demo).</p>
+    <p>&copy; 2026 E-com. Không có bản quyền (Demo).</p>
   </footer>
 
   <script src="js/data.js"></script>
   <script>
     let currentCategoryFilter = 'All';
+    let currentSearchQuery = '';
+
+    function searchProducts(query) {
+      currentSearchQuery = query.toLowerCase().trim();
+      renderProducts();
+    }
 
     function renderCategoryFilters() {
       const products = getProducts();
@@ -69,8 +78,12 @@
         products = products.filter(p => p.category === currentCategoryFilter);
       }
       
+      if (currentSearchQuery) {
+        products = products.filter(p => p.name.toLowerCase().includes(currentSearchQuery));
+      }
+      
       if (products.length === 0) {
-        productList.innerHTML = '<p class="text-center" style="grid-column: 1 / -1; color: var(--text-muted)">Không có sản phẩm nào cho danh mục này.</p>';
+        productList.innerHTML = '<p class="text-center" style="grid-column: 1 / -1; color: var(--text-muted)">Không tìm thấy sản phẩm nào.</p>';
         return;
       }
 
