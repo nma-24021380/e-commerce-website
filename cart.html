@@ -273,14 +273,14 @@
       });
       saveProducts(products);
 
-      // Cập nhật tổng chi tiêu của Khách hàng
-      if (currentUser && currentUser.role === 'customer') {
+      // Cập nhật tổng chi tiêu: Chuyển khoản → cộng ngay; COD → chờ giao mới cộng
+      if (paymethod === 'Chuyển khoản' && currentUser && currentUser.role === 'customer') {
         let customers = getCustomers();
         let customerIndex = customers.findIndex(c => c.id === currentUser.id);
         if (customerIndex > -1) {
             customers[customerIndex].totalSpent = (customers[customerIndex].totalSpent || 0) + orderTotal;
             saveCustomers(customers);
-            
+
             // Cập nhật lại state của user hiện tại
             currentUser.totalSpent = customers[customerIndex].totalSpent;
             localStorage.setItem('ecommerce_currentUser', JSON.stringify(currentUser));
